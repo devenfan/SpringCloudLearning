@@ -5,10 +5,15 @@ eureka:
 
 server:
   port: 5000
+
 spring:
   application:
     name: gateway-service
   sleuth:
+    web:
+      enabled: true
+    zuul:
+      enabled: true
     sampler:
       percentage: 1.0
   zipkin:
@@ -19,3 +24,17 @@ zuul:
     api-a:
       path: /user-api/**
       serviceId: user-service
+      sensitive-headers: Cookie,Set-Cookie
+    api-rpc1:
+      path: /rpc1-api/**
+      serviceId: rpc1-service
+      sensitive-headers: Cookie,Set-Cookie
+    api-rpc2:
+      path: /rpc2-api/**
+      serviceId: rpc2-service
+      sensitive-headers: Cookie,Set-Cookie
+  ignoredPatterns: /info,/loggers,/metrics,/health,/mappings,/beans,/dump,/heapdump,/env,/configprops,/trace,/loadBalancer,/bizConfig,/instance-status
+
+management:
+  security:
+    enabled: false
