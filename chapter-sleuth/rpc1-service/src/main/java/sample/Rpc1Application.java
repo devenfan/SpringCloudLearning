@@ -5,13 +5,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.client.RestTemplate;
 import sample.web.SampleController;
 
 @EnableEurekaClient
 @SpringBootApplication
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-//@EnableAsync
+@EnableAsync
 public class Rpc1Application {
 
 	@Bean

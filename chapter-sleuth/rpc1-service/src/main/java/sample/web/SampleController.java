@@ -19,8 +19,8 @@ package sample.web;
 import java.util.Random;
 import java.util.concurrent.Callable;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.embedded.EmbeddedServletContainerInitializedEvent;
 import org.springframework.cloud.sleuth.Span;
@@ -35,24 +35,25 @@ import org.springframework.web.client.RestTemplate;
 @RestController
 public class SampleController implements ApplicationListener<EmbeddedServletContainerInitializedEvent> {
 
-    private static final Log log    = LogFactory.getLog(SampleController.class);
+    private static final Logger logger = LoggerFactory.getLogger(SampleController.class);
 
     @Autowired
-    private RestTemplate     restTemplate;
+    private RestTemplate        restTemplate;
     @Autowired
-    private Tracer           tracer;
+    private Tracer              tracer;
     @Autowired
-    private SpanAccessor     accessor;
+    private SpanAccessor        accessor;
     @Autowired
-    private SampleBackground background;
+    private SampleBackground    background;
 
-    private final Random     random = new Random();
-    private int              port;
+    private final Random        random = new Random();
+    private int                 port;
 
     @RequestMapping("/hi")
     public String hi() throws InterruptedException {
         Thread.sleep(this.random.nextInt(1000));
         String s = this.callUserServiceApi("/user/hi", String.class);
+        logger.info("[RPC1] CurrentSpan: {}", this.accessor.getCurrentSpan());
         return "[RPC1] hi: \r\n " + s;
     }
 
@@ -62,6 +63,7 @@ public class SampleController implements ApplicationListener<EmbeddedServletCont
         Thread.sleep(millis);
         this.tracer.addTag("random-sleep-millis", String.valueOf(millis));
         String s = this.callUserServiceApi("/user/hi", String.class);
+        logger.info("[RPC1] CurrentSpan: {}", this.accessor.getCurrentSpan());
         return "[RPC1] h2: \r\n " + s;
     }
 
@@ -70,18 +72,20 @@ public class SampleController implements ApplicationListener<EmbeddedServletCont
         return new Callable<String>() {
             @Override
             public String call() throws Exception {
-                int millis = SampleController.this.random.nextInt(1000);
+                int millis = SampleController.this.random.nextInt(2000);
                 Thread.sleep(millis);
                 SampleController.this.tracer.addTag("callable-sleep-millis", String.valueOf(millis));
                 Span currentSpan = SampleController.this.accessor.getCurrentSpan();
+                logger.info("[RPC1] CurrentSpan: {}", currentSpan);
                 return "[RPC1] async call: " + currentSpan;
             }
         };
     }
 
     @RequestMapping("/background")
-    public String async() throws InterruptedException {
+    public String background() throws InterruptedException {
         this.background.background();
+        logger.info("[RPC1] CurrentSpan: {}", this.accessor.getCurrentSpan());
         return "[RPC1] background";
     }
 
@@ -89,10 +93,10 @@ public class SampleController implements ApplicationListener<EmbeddedServletCont
     public String info() throws InterruptedException {
         Span span = this.tracer.createSpan("http:customTraceEndpoint", new AlwaysSampler());
         int millis = this.random.nextInt(1000);
-        log.info(String.format("Sleeping for [%d] millis", millis));
         Thread.sleep(millis);
         this.tracer.addTag("random-sleep-millis", String.valueOf(millis));
         String s = this.callSelfRestApi("/info", String.class);
+        logger.info("[RPC1] CurrentSpan: {}", this.accessor.getCurrentSpan());
         this.tracer.close(span);
         return "[RPC1] info: " + s;
     }
@@ -100,11 +104,11 @@ public class SampleController implements ApplicationListener<EmbeddedServletCont
     @RequestMapping("/health")
     public String health() throws InterruptedException {
         int millis = this.random.nextInt(1000);
-        log.info(String.format("Sleeping for [%d] millis", millis));
+        logger.info(String.format("Sleeping for [%d] millis", millis));
         Thread.sleep(millis);
         this.tracer.addTag("random-sleep-millis", String.valueOf(millis));
-
         String s = this.callSelfRestApi("/health", String.class);
+        logger.info("[RPC1] CurrentSpan: {}", this.accessor.getCurrentSpan());
         return "[RPC1] health: " + s;
     }
 
